@@ -38,8 +38,12 @@ export default function TutorPage() {
     try {
       const res = await axios.post("https://ai-book-reader.onrender.com/ask", form);
       setResponse(res.data.answer || "No response from API.");
-    } catch (error: any) {
-      setResponse("Error: " + error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setResponse("Error: " + error.message);
+      } else {
+        setResponse("An unknown error occurred.");
+      }
     } finally {
       setLoading(false);
     }
@@ -197,7 +201,7 @@ export default function TutorPage() {
               remarkPlugins={[remarkMath]}
               rehypePlugins={[rehypeKatex]}
               components={{
-                p: ({ node, children }) => (
+                p: ({ children }) => (
                   <p className="text-base pt-1 pb-3">{children}</p>
                 ),
               }}
