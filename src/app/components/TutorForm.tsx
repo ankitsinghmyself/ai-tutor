@@ -7,10 +7,10 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 
-const boards = ["UPMSP", "CBSE", "ICSE"];
+const boards = ["UPMSP", "CBSE"];
 const languages = ["hindi", "english"];
-const classes = ["10", "11", "12"];
-const subjects = ["math", "science", "history"];
+const classes = ["10", "12"];
+const subjects = ["math", "science"];
 
 export default function TutorPage() {
   const [form, setForm] = useState({
