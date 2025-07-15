@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import axios from "axios";
-
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -12,204 +11,192 @@ const languages = ["hindi", "english"];
 const classes = ["10", "12"];
 const subjects = ["math", "science"];
 
+type Message = {
+  sender: "user" | "ai";
+  content: string;
+};
+
 export default function TutorPage() {
   const [form, setForm] = useState({
     board: "",
     language: "",
     classLevel: "",
     subject: "",
-    question: "",
   });
-  const [response, setResponse] = useState("");
+
+  const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async () => {
+  const handleSend = async () => {
+    if (!question.trim()) return;
+
+    setMessages((prev) => [...prev, { sender: "user", content: question }]);
+    setQuestion("");
     setLoading(true);
-    setResponse("");
+
+    const { board, language, classLevel, subject } = form;
+
+    if (!board || !language || !classLevel || !subject) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "ai",
+          content:
+            "⚠️ Please select all filters (Board, Language, Class, Subject) to receive an AI response.",
+        },
+      ]);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await axios.post("https://ai-book-reader.onrender.com/ask", form);
-      setResponse(res.data.answer || "No response from API.");
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setResponse("Error: " + error.message);
-      } else {
-        setResponse("An unknown error occurred.");
-      }
+      const res = await axios.post("https://ai-book-reader.onrender.com/ask", {
+        board,
+        language,
+        classLevel,
+        subject,
+        question,
+      });
+
+      const answer = res.data.answer || "⚠️ No answer received from AI.";
+      setMessages((prev) => [...prev, { sender: "ai", content: answer }]);
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "ai", content: "❌ Error: " + err.message },
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-white overflow-x-hidden font-sans">
-      <div className="mx-auto w-full h-full px-4 sm:px-6 lg:px-8">
-        <header className="flex flex-col sm:flex-row items-center justify-between border-b border-[#f1f2f4] py-3">
-          <div className="flex items-center gap-4 text-[#121416] mb-3 sm:mb-0">
-            <div className="w-6 h-6 sm:w-4 sm:h-4">
-              <svg
-                viewBox="0 0 48 48"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 7.27094L4 42.4379Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </div>
-            <h2 className="text-lg font-bold tracking-tight">EduQuery</h2>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-center">
-            <nav className="flex gap-6 text-sm font-medium text-[#121416]">
-              <a href="#" className="hover:underline">
-                Home
-              </a>
-              <a href="#" className="hover:underline">
-                About
-              </a>
-              <a href="#" className="hover:underline">
-                Contact
-              </a>
-            </nav>
-            <div className="flex gap-2">
-              <button className="h-10 px-4 bg-[#dce8f3] text-sm font-bold rounded-full">
-                Sign Up
-              </button>
-              <button className="h-10 px-4 bg-[#f1f2f4] text-sm font-bold rounded-full">
-                Login
-              </button>
-            </div>
-          </div>
-        </header>
+    <div className="min-h-screen bg-white p-4 max-w-4xl mx-auto">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-center text-[#121416]">
+          📚 AI Tutor
+        </h1>
+      </header>
 
-        <main className="mt-6 mb-12">
-          <h1 className="text-3xl font-bold text-[#121416] px-4 sm:px-0 mb-6">
-            AI Tutor
-          </h1>
+      {/* Filter Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <select
+          name="board"
+          value={form.board}
+          onChange={handleChange}
+          className="border p-3 rounded-lg"
+        >
+          <option value="">Select Board</option>
+          {boards.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
+        </select>
 
-          <form className="">
-            {/* All dropdowns in one row */}
-            <div className="flex flex-wrap gap-4">
-              <label className="flex-1 min-w-[150px]">
-                <span className="text-base font-medium pb-2">Board</span>
-                <select
-                  name="board"
-                  value={form.board}
-                  onChange={handleChange}
-                  className="form-select w-full rounded-xl border border-[#dde1e3] h-14 p-4"
-                >
-                  <option value="">Select Board</option>
-                  {boards.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-              </label>
+        <select
+          name="language"
+          value={form.language}
+          onChange={handleChange}
+          className="border p-3 rounded-lg"
+        >
+          <option value="">Select Language</option>
+          {languages.map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
+        </select>
 
-              <label className="flex-1 min-w-[150px]">
-                <span className="text-base font-medium pb-2">Language</span>
-                <select
-                  name="language"
-                  value={form.language}
-                  onChange={handleChange}
-                  className="form-select w-full rounded-xl border border-[#dde1e3] h-14 p-4"
-                >
-                  <option value="">Select Language</option>
-                  {languages.map((l) => (
-                    <option key={l} value={l}>
-                      {l}
-                    </option>
-                  ))}
-                </select>
-              </label>
+        <select
+          name="classLevel"
+          value={form.classLevel}
+          onChange={handleChange}
+          className="border p-3 rounded-lg"
+        >
+          <option value="">Select Class</option>
+          {classes.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
 
-              <label className="flex-1 min-w-[150px]">
-                <span className="text-base font-medium pb-2">Class</span>
-                <select
-                  name="classLevel"
-                  value={form.classLevel}
-                  onChange={handleChange}
-                  className="form-select w-full rounded-xl border border-[#dde1e3] h-14 p-4"
-                >
-                  <option value="">Select Class</option>
-                  {classes.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </label>
+        <select
+          name="subject"
+          value={form.subject}
+          onChange={handleChange}
+          className="border p-3 rounded-lg"
+        >
+          <option value="">Select Subject</option>
+          {subjects.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+      </div>
 
-              <label className="flex-1 min-w-[150px]">
-                <span className="text-base font-medium pb-2">Subject</span>
-                <select
-                  name="subject"
-                  value={form.subject}
-                  onChange={handleChange}
-                  className="form-select w-full rounded-xl border border-[#dde1e3] h-14 p-4"
-                >
-                  <option value="">Select Subject</option>
-                  {subjects.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            {/* Question textarea on separate row */}
-            <div className="mt-6">
-              <label className="flex flex-col">
-                <span className="text-base font-medium pb-2">Question</span>
-                <textarea
-                  name="question"
-                  placeholder="Enter your question"
-                  value={form.question}
-                  onChange={handleChange}
-                  className="form-input w-full rounded-xl border border-[#dde1e3] min-h-[9rem] p-4 placeholder:text-[#6a7681]"
-                />
-              </label>
-            </div>
-
-            {/* Submit button */}
-            <div className="flex justify-end mt-6">
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="h-10 px-6 rounded-full bg-[#dce8f3] text-sm font-bold hover:bg-[#c1d4ea] disabled:opacity-60 disabled:cursor-not-allowed transition"
-              >
-                {loading ? "Submitting..." : "Submit"}
-              </button>
-            </div>
-          </form>
-
-          <div className="">
-            <h3 className="text-lg font-bold mb-2">Response</h3>
-            <ReactMarkdown
-              remarkPlugins={[remarkMath]}
-              rehypePlugins={[rehypeKatex]}
-              components={{
-                p: ({ children }) => (
-                  <p className="text-base pt-1 pb-3">{children}</p>
-                ),
-              }}
+      {/* Chat Window */}
+      <div className="bg-gray-50 border rounded-lg p-4 mb-4 max-h-[500px] overflow-y-auto">
+        {messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`mb-3 ${
+              msg.sender === "user" ? "text-right" : "text-left"
+            }`}
+          >
+            <div
+              className={`inline-block px-4 py-2 rounded-lg ${
+                msg.sender === "user"
+                  ? "bg-blue-100 text-blue-900"
+                  : "bg-gray-200 text-gray-900"
+              }`}
             >
-              {response}
-            </ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+                components={{
+                  p: ({ children }) => (
+                    <p className="text-sm leading-relaxed">{children}</p>
+                  ),
+                }}
+              >
+                {msg.content}
+              </ReactMarkdown>
+            </div>
           </div>
-        </main>
+        ))}
+        {loading && (
+          <div className="text-left text-sm text-gray-500">🤖 Thinking...</div>
+        )}
+      </div>
+
+      {/* Input */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="Ask your question..."
+          className="flex-1 border p-3 rounded-lg"
+        />
+        <button
+          onClick={handleSend}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+        >
+          Send
+        </button>
       </div>
     </div>
   );
