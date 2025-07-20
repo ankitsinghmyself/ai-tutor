@@ -60,7 +60,7 @@ export default function TutorPage() {
     }
 
     try {
-      const res = await axios.post("https://ai-book-reader.onrender.com/ask", {
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ask`, {
         board,
         language,
         classLevel,
