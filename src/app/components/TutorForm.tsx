@@ -60,20 +60,28 @@ export default function TutorPage() {
     }
 
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ask`, {
-        board,
-        language,
-        classLevel,
-        subject,
-        question,
-      });
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/ask`,
+        {
+          board,
+          language,
+          classLevel,
+          subject,
+          question,
+        }
+      );
 
       const answer = res.data.answer || "⚠️ No answer received from AI.";
       setMessages((prev) => [...prev, { sender: "ai", content: answer }]);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      let errorMessage = "An unexpected error occurred.";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
       setMessages((prev) => [
         ...prev,
-        { sender: "ai", content: "❌ Error: " + err.message },
+        { sender: "ai", content: "❌ Error: " + errorMessage },
       ]);
     } finally {
       setLoading(false);
