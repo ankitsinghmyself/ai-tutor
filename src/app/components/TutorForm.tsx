@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -27,6 +27,18 @@ export default function TutorPage() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  // Load sessionId from localStorage (optional)
+  useEffect(() => {
+    const stored = localStorage.getItem("ai_session");
+    if (stored) setSessionId(stored);
+  }, []);
+
+  // Save sessionId to localStorage whenever it changes
+  useEffect(() => {
+    if (sessionId) localStorage.setItem("ai_session", sessionId);
+  }, [sessionId]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -35,6 +47,8 @@ export default function TutorPage() {
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setSessionId(null); // Reset session on filter change
+    localStorage.removeItem("ai_session");
   };
 
   const handleSend = async () => {
@@ -60,6 +74,8 @@ export default function TutorPage() {
     }
 
     try {
+      console.log("➡️ Sent session_id:", sessionId);
+
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/ask`,
         {
@@ -68,10 +84,20 @@ export default function TutorPage() {
           classLevel,
           subject,
           question,
+          session_id: sessionId,
         }
       );
 
       const answer = res.data.answer || "⚠️ No answer received from AI.";
+      const returnedSessionId = res.data.session_id;
+
+      console.log("⬅️ Received session_id:", returnedSessionId);
+
+      // ✅ Always update session_id
+      if (returnedSessionId) {
+        setSessionId(returnedSessionId);
+      }
+
       setMessages((prev) => [...prev, { sender: "ai", content: answer }]);
     } catch (err: unknown) {
       let errorMessage = "An unexpected error occurred.";
